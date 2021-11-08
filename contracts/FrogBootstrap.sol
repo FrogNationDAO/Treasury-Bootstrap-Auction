@@ -7,6 +7,13 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 contract FrogBootstrap is CustomERC721Metadata, Ownable {
     using SafeMath for uint256;
 
+    event Mint(
+        address indexed _to,
+        uint256 indexed _tokenId,
+        uint256 indexed _projectId
+
+    );
+
     struct Project {
         string name;
         string artist;
@@ -26,8 +33,11 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
         bool paused;
     }
 
+    address public frogBootstrapAddress;
     uint256 public frogBootstrapPercentage = 20;
     uint256 public nextProjectId = 0;
+
+    uint256 constant ONE_MILLION = 1_000_000;
 
     mapping(uint256 => Project) projects;
 
@@ -39,7 +49,6 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
     mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
     mapping(uint256 => uint256) public projectIdToSecondaryMarketRoyaltyPercentage;
 
-
     mapping(uint256 => string) public staticIpfsImageLink;
     mapping(uint256 => uint256) public tokenIdToProjectId;
     mapping(uint256 => uint256[]) internal projectIdToTokenIds;
@@ -49,9 +58,33 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
     mapping(address => bool) public isWhitelisted;
     mapping(address => bool) public isMintWhitelisted;
 
-
-
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) CustomERC721Metadata(_name, _symbol) {
+        isWhitelisted[msg.sender] = true;
+        frogBootstrapAddress = msg.sender;
+    }
 
+    function _mintToken(address _to, uint256 _projectId) internal returns (uint256) {
+        uint256 upcomingToken = (_projectId * ONE_MILLION) + projects[_projectId].invocations;
+        projects[_projectId].invocations = projects[_projectId].invocations.add(1);
+
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                projects[_projectId].invocations,
+                block.number,
+                blockhash(block.number - 1),
+                msg.sender)
+        );
+
+        tokenIdToHash[upcomingToken] = hash;
+        hashToTokenId[hash] = upcomingToken;
+
+        super._mint(_to, upcomingToken);
+
+        tokenIdToProjectId[upcomingToken] = _projectId;
+        projectIdToTokenIds[_projectId].push(upcomingToken);
+
+        emit Mint(_to, upcomingToken, _projectId);
+
+        return upcomingToken;
     }
 }
