@@ -31,6 +31,8 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
         bool active;
         bool locked;
         bool paused;
+        bool whitelist;
+        mapping(address => bool) isMintWhitelisted;
     }
 
     address public frogBootstrapAddress;
@@ -56,11 +58,22 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
     mapping(bytes32 => uint256) public hashToTokenId;
 
     mapping(address => bool) public isWhitelisted;
-    mapping(address => bool) public isMintWhitelisted;
 
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) CustomERC721Metadata(_name, _symbol) {
         isWhitelisted[msg.sender] = true;
         frogBootstrapAddress = msg.sender;
+    }
+
+    function mint(address _to, uint256 _projectId, address _by) external returns (uint256 _tokenId) {
+        require(
+            projects[_projectId].whitelist && projects[_projectId].isMintWhitelisted[msg.sender],
+            "Must mint from whitelisted minter contract."
+        );
+        require(projects[_projectId].invocations.add(1) <= projects[_projectId].maxInvocations, "Must not exceed max invocations");
+        require(projects[_projectId].active || _by == projectIdToArtistAddress[_projectId], "Project must exist and be active");
+        require(!projects[_projectId].paused || _by == projectIdToArtistAddress[_projectId], "Purchases are paused.");
+
+        return _mintToken(_to, _projectId);
     }
 
     function _mintToken(address _to, uint256 _projectId) internal returns (uint256) {
