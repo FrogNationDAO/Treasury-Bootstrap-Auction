@@ -64,9 +64,36 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
         _;
     }
 
+    modifier onlyWhitelisted() {
+        require(isWhitelisted[msg.sender], "Only whitelisted");
+        _;
+    }
+
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) CustomERC721Metadata(_name, _symbol) {
         isWhitelisted[msg.sender] = true;
         frogBootstrapAddress = msg.sender;
+    }
+
+    function addProject(
+        string memory _projectName,
+        address _artistAddress,
+        uint256 _pricePerToken,
+        bool _whitelist
+    )
+        public onlyWhitelisted
+    {
+
+        uint256 projectId = nextProjectId;
+        projectIdToArtistAddress[projectId] = _artistAddress;
+        projects[projectId].name = _projectName;
+        projectIdToCurrencySymbol[projectId] = "FTM";
+        projectIdToPricePerTokenInWei[projectId] = _pricePerToken;
+
+        projects[projectId].paused = true;
+        projects[projectId].whitelist = _whitelist;
+        projects[projectId].maxInvocations = ONE_MILLION;
+
+        nextProjectId = nextProjectId.add(1);
     }
 
     function mint(address _to, uint256 _projectId, address _by) external returns (uint256 _tokenId) {
@@ -126,6 +153,10 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
     function removeMintWhitelisted(uint256 _projectId, address _address) public onlyArtist(_projectId) {
         require(projects[_projectId].whitelist, "Bootstrap: Not a whitelist project");
         projects[_projectId].isMintWhitelisted[_address] = false;
+    }
+
+    function toggleProjectPaused(uint256 _projectId) public onlyArtist(_projectId) {
+        projects[_projectId].paused = !projects[_projectId].paused;
     }
 
     function updateFrogBootstrapPercentage(uint256 _frogBootstrapPercentage) public onlyOwner {
