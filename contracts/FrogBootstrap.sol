@@ -127,4 +127,13 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
         require(projects[_projectId].whitelist, "Bootstrap: Not a whitelist project");
         projects[_projectId].isMintWhitelisted[_address] = false;
     }
+
+    function updateFrogBootstrapPercentage(uint256 _frogBootstrapPercentage) public onlyOwner {
+        require(_frogBootstrapPercentage <= 50, "Bootstrap: Max %50");
+        frogBootstrapPercentage = _frogBootstrapPercentage;
+    }
+
+    function toggleProjectActive(uint256 _projectId) public onlyOwner {
+        projects[_projectId].active = !projects[_projectId].active;
+    }
 }
