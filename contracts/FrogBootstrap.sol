@@ -59,6 +59,11 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
 
     mapping(address => bool) public isWhitelisted;
 
+    modifier onlyArtist(uint256 _projectId) {
+        require(msg.sender == projectIdToArtistAddress[_projectId], "Only artist");
+        _;
+    }
+
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) CustomERC721Metadata(_name, _symbol) {
         isWhitelisted[msg.sender] = true;
         frogBootstrapAddress = msg.sender;
@@ -103,5 +108,23 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
 
     function updateFrogBootstrap(address _frogBootstrap) public onlyOwner {
         frogBootstrapAddress = _frogBootstrap;
+    }
+
+    function addWhitelisted(address _address) public onlyOwner {
+        isWhitelisted[_address] = true;
+    }
+
+    function removeWhitelisted(address _address) public onlyOwner {
+        isWhitelisted[_address] = false;
+    }
+
+    function addMintWhitelisted(uint256 _projectId, address _address) public onlyArtist(_projectId) {
+        require(projects[_projectId].whitelist, "Bootstrap: Not a whitelist project");
+        projects[_projectId].isMintWhitelisted[_address] = true;
+    }
+
+    function removeMintWhitelisted(uint256 _projectId, address _address) public onlyArtist(_projectId) {
+        require(projects[_projectId].whitelist, "Bootstrap: Not a whitelist project");
+        projects[_projectId].isMintWhitelisted[_address] = false;
     }
 }
