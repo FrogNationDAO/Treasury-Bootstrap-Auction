@@ -100,4 +100,8 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
 
         return upcomingToken;
     }
+
+    function updateFrogBootstrap(address _frogBootstrap) public onlyOwner {
+        frogBootstrapAddress = _frogBootstrap;
+    }
 }
