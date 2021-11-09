@@ -1,5 +1,6 @@
 pragma solidity ^0.8.7;
 
+import "./libs/Strings.sol";
 import "./ERC721/CustomERC721Metadata.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -160,8 +161,6 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
         projects[_projectId].active = !projects[_projectId].active;
     }
 
-    //--
-
     function updateProjectArtistAddress(uint256 _projectId, address _artistAddress) public onlyArtistOrOwner(_projectId) {
         projectIdToArtistAddress[_projectId] = _artistAddress;
     }
@@ -176,7 +175,18 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
         projects[_projectId].artist = _projectArtistName;
     }
 
-    //--
+    function updateProjectDescription(uint256 _projectId, string memory _projectDescription) onlyArtistOrOwner(_projectId) public {
+        projects[_projectId].description = _projectDescription;
+    }
+
+    function updateProjectWebsite(uint256 _projectId, string memory _projectWebsite) onlyArtistOrOwner(_projectId) public {
+        projects[_projectId].website = _projectWebsite;
+    }
+
+    function updateProjectLicense(uint256 _projectId, string memory _projectLicense) onlyArtistOrOwner(_projectId) public {
+        require(!projects[_projectId].locked, "Project locked");
+        projects[_projectId].license = _projectLicense;
+    }
 
     function updateProjectPricePerTokenInWei(uint256 _projectId, uint256 _pricePerTokenInWei) onlyArtist(_projectId) public {
         projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
@@ -194,5 +204,18 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
 
     function toggleProjectPaused(uint256 _projectId) public onlyArtist(_projectId) {
         projects[_projectId].paused = !projects[_projectId].paused;
+    }
+
+    function tokenURI(uint256 _tokenId) public view override returns (string memory) {
+        require(_exists(_tokenId), "Token ID must exist");
+        if (bytes(staticIpfsImageLink[_tokenId]).length > 0) {
+            return lStrings.strConcat(projects[tokenIdToProjectId[_tokenId]].projectBaseIpfsURI, staticIpfsImageLink[_tokenId]);
+        }
+
+        if (!projects[tokenIdToProjectId[_tokenId]].dynamic && projects[tokenIdToProjectId[_tokenId]].useIpfs) {
+            return lStrings.strConcat(projects[tokenIdToProjectId[_tokenId]].projectBaseIpfsURI, projects[tokenIdToProjectId[_tokenId]].ipfsHash);
+        }
+
+        return lStrings.strConcat(projects[tokenIdToProjectId[_tokenId]].projectBaseURI, lStrings.uint2str(_tokenId));
     }
 }
