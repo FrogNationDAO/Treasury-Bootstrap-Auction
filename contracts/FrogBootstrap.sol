@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
 import "./libs/Strings.sol";
@@ -33,12 +34,15 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
         bool locked;
         bool paused;
         bool whitelist;
+        uint256 limiter;
         mapping(address => bool) isMintWhitelisted;
     }
 
     address public frogBootstrapAddress;
     uint256 public frogBootstrapPercentage = 20;
     uint256 public nextProjectId = 0;
+
+    uint256 public timeLimiter = 1 hours;
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -99,6 +103,7 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
         projects[projectId].paused = true;
         projects[projectId].whitelist = _whitelist;
         projects[projectId].maxInvocations = ONE_MILLION;
+        projects[projectId].limiter = timeLimiter;
 
         nextProjectId = nextProjectId.add(1);
     }
@@ -155,6 +160,10 @@ contract FrogBootstrap is CustomERC721Metadata, Ownable {
     function updateFrogBootstrapPercentage(uint256 _frogBootstrapPercentage) public onlyOwner {
         require(_frogBootstrapPercentage <= 50, "Bootstrap: Max %50");
         frogBootstrapPercentage = _frogBootstrapPercentage;
+    }
+
+    function updateTimeLimiter(uint256 _timeLimiter) public onlyOwner {
+        timeLimiter = _timeLimiter;
     }
 
     function toggleProjectActive(uint256 _projectId) public onlyOwner {
